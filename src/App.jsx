@@ -12,8 +12,45 @@ export default function App() {
 
   const [decks, setDecks] = useState([]);
 
+  useEffect(() => {
+
+    const savedDeckId =
+      localStorage.getItem(
+        "selected-deck-id"
+      );
+
+    if (!savedDeckId) return;
+
+    const foundDeck = decks.find(
+      (deck) =>
+        deck.id.toString() === savedDeckId
+    );
+
+    if (foundDeck) {
+
+      setSelectedDeck(foundDeck);
+
+    }
+
+  }, [decks]);
+
   const [selectedDeck, setSelectedDeck] =
     useState(null);
+
+  // =========================
+  // SAVE CURRENT DECK
+  // =========================
+
+  useEffect(() => {
+
+    if (!selectedDeck) return;
+
+    localStorage.setItem(
+      "selected-deck-id",
+      selectedDeck.id
+    );
+
+  }, [selectedDeck]);
 
   const [showFavorites, setShowFavorites] =
     useState(false);
@@ -77,12 +114,12 @@ export default function App() {
   // =========================
 
   const favoriteWords = selectedDeck
-  ? selectedDeck.words.filter((word) =>
+    ? selectedDeck.words.filter((word) =>
       selectedDeck.favorites?.includes(
         word.word
       )
     )
-  : [];
+    : [];
 
   // =========================
   // FAVORITES PAGE

@@ -15,6 +15,8 @@ export default function StudyPage({
 
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
 
+  const [isProgressLoaded, setIsProgressLoaded] = useState(false);
+
   const [showMeaning, setShowMeaning] = useState(false);
 
   const [showJsonModal, setShowJsonModal] = useState(false);
@@ -34,9 +36,85 @@ export default function StudyPage({
 
   const [isFinished, setIsFinished] = useState(false);
 
+  const progressKey = `progress-${selectedDeck.id}`;
+
   const [shuffledWords, setShuffledWords] = useState([]);
 
   const { speakJapanese } = useSpeech();
+
+  // =========================
+  // LOAD SAVED PROGRESS
+  // =========================
+
+  useEffect(() => {
+
+    if (!selectedDeck) return;
+
+    const savedProgress =
+      localStorage.getItem(
+        `progress-${selectedDeck.id}`
+      );
+
+    if (savedProgress) {
+
+      const parsed =
+        JSON.parse(savedProgress);
+
+      if (parsed.currentWord) {
+
+        const foundIndex =
+          filteredWords.findIndex(
+            (word) =>
+              word.word === parsed.currentWord
+          );
+
+        if (foundIndex !== -1) {
+
+          setCurrentWordIndex(foundIndex);
+
+        }
+
+      }
+
+      setIsQuizMode(
+        parsed.isQuizMode || false
+      );
+
+      setQuizScore(
+        parsed.quizScore || 0
+      );
+
+    }
+
+    setIsProgressLoaded(true);
+
+  }, [selectedDeck]);
+
+  useEffect(() => {
+
+    const savedProgress =
+      localStorage.getItem(progressKey);
+
+    if (savedProgress) {
+
+      const parsed =
+        JSON.parse(savedProgress);
+
+      setCurrentWordIndex(
+        parsed.currentWordIndex || 0
+      );
+
+      setQuizScore(
+        parsed.quizScore || 0
+      );
+
+      setIsQuizMode(
+        parsed.isQuizMode || false
+      );
+
+    }
+
+  }, [progressKey]);
 
   const sourceWords =
     shuffledWords.length > 0
@@ -79,7 +157,12 @@ export default function StudyPage({
   };
 
   const currentWord =
-    filteredWords[currentWordIndex];
+    filteredWords[
+    Math.min(
+      currentWordIndex,
+      filteredWords.length - 1
+    )
+    ];
 
   const quizOptions =
     currentWord
@@ -92,6 +175,26 @@ export default function StudyPage({
   const progressPercentage =
     ((currentWordIndex + 1)
       / selectedDeck.words.length) * 100;
+
+  useEffect(() => {
+
+    const progressData = {
+      currentWord: currentWord?.word,
+      isQuizMode,
+      quizScore
+    };
+
+    localStorage.setItem(
+      progressKey,
+      JSON.stringify(progressData)
+    );
+
+  }, [
+    currentWordIndex,
+    quizScore,
+    isQuizMode,
+    progressKey
+  ]);
 
   const handleJsonFileUpload = (event) => {
 
@@ -307,6 +410,8 @@ export default function StudyPage({
 
       setIsFinished(true);
 
+      localStorage.removeItem(progressKey);
+
     }
 
   };
@@ -373,7 +478,37 @@ export default function StudyPage({
 
     setIsFinished(false);
 
+    localStorage.removeItem(progressKey);
+
   };
+  // =========================
+  // AUTO SAVE PROGRESS
+  // =========================
+
+  useEffect(() => {
+
+    if (!selectedDeck) return;
+
+    if (!isProgressLoaded) return;
+
+    const progressData = {
+      currentWordIndex,
+      isQuizMode,
+      quizScore
+    };
+
+    localStorage.setItem(
+      `progress-${selectedDeck.id}`,
+      JSON.stringify(progressData)
+    );
+
+  }, [
+    currentWordIndex,
+    isQuizMode,
+    quizScore,
+    selectedDeck,
+    isProgressLoaded
+  ]);
 
   // =========================
   // FINISHED SCREEN
@@ -486,9 +621,15 @@ export default function StudyPage({
             </button>
 
             <button
-              onClick={() =>
-                setSelectedDeck(null)
-              }
+              onClick={() => {
+
+                localStorage.removeItem(
+                  "selected-deck-id"
+                );
+
+                setSelectedDeck(null);
+
+              }}
               className="
                 bg-slate-500
                 hover:bg-slate-600
