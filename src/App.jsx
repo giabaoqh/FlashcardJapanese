@@ -77,12 +77,12 @@ export default function App() {
   // =========================
 
   const favoriteWords = selectedDeck
-    ? selectedDeck.words.filter((word) =>
+  ? selectedDeck.words.filter((word) =>
       selectedDeck.favorites?.includes(
         word.word
       )
     )
-    : [];
+  : [];
 
   // =========================
   // FAVORITES PAGE

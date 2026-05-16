@@ -21,6 +21,11 @@ export default function StudyPage({
 
   const [jsonInput, setJsonInput] = useState("");
 
+  const [showJsonGuide, setShowJsonGuide] = useState(false);
+
+  const [search, setSearch] = useState("");
+
+
   const [isQuizMode, setIsQuizMode] = useState(false);
 
   const [quizScore, setQuizScore] = useState(0);
@@ -29,22 +34,86 @@ export default function StudyPage({
 
   const [isFinished, setIsFinished] = useState(false);
 
+  const [shuffledWords, setShuffledWords] = useState([]);
+
   const { speakJapanese } = useSpeech();
 
+  const sourceWords =
+    shuffledWords.length > 0
+      ? shuffledWords
+      : selectedDeck.words;
+
+  let filteredWords =
+    sourceWords.filter((word) =>
+
+      word.word
+        .toLowerCase()
+        .includes(search.toLowerCase())
+
+      ||
+
+      word.reading
+        ?.toLowerCase()
+        .includes(search.toLowerCase())
+
+      ||
+
+      word.meaning
+        ?.toLowerCase()
+        .includes(search.toLowerCase())
+
+    );
+
+  const shuffleCards = () => {
+
+    const shuffled = [...filteredWords].sort(
+      () => Math.random() - 0.5
+    );
+
+    setShuffledWords(shuffled);
+
+    setCurrentWordIndex(0);
+
+    setShowMeaning(false);
+
+  };
+
   const currentWord =
-    selectedDeck.words[currentWordIndex];
+    filteredWords[currentWordIndex];
 
   const quizOptions =
     currentWord
       ? generateQuizOptions(
         currentWord,
-        selectedDeck.words
+        filteredWords
       )
       : [];
 
   const progressPercentage =
     ((currentWordIndex + 1)
       / selectedDeck.words.length) * 100;
+
+  const handleJsonFileUpload = (event) => {
+
+    const file =
+      event.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+
+      const content =
+        e.target.result;
+
+      setJsonInput(content);
+
+    };
+
+    reader.readAsText(file);
+
+  };
 
   const saveWords = () => {
 
@@ -611,8 +680,39 @@ export default function StudyPage({
 
         </div>
 
+        <div className="mb-6">
+
+          <input
+            type="text"
+            placeholder="🔍 Tìm từ vựng..."
+            value={search}
+            onChange={(e) => {
+
+              setSearch(e.target.value);
+
+              setCurrentWordIndex(0);
+
+              setShuffledWords([]);
+
+            }}
+            className={`
+      w-full
+      p-4
+      rounded-2xl
+      border
+      outline-none
+
+      ${isDarkMode
+                ? "bg-slate-800 border-slate-700 text-white"
+                : "bg-white border-slate-300 text-slate-800"
+              }
+    `}
+          />
+
+        </div>
+
         {/* EMPTY */}
-        {selectedDeck.words.length === 0 ? (
+        {filteredWords.length === 0 ? (
 
           <div
             className={`
@@ -744,9 +844,10 @@ export default function StudyPage({
               speakJapanese={speakJapanese}
               isDarkMode={isDarkMode}
               selectedDeck={selectedDeck}
+              setSelectedDeck={setSelectedDeck}
               decks={decks}
               setDecks={setDecks}
-              setSelectedDeck={setSelectedDeck}
+              shuffleCards={shuffleCards}
             />
 
             {/* CONTROLS */}
@@ -765,25 +866,6 @@ export default function StudyPage({
               "
               >
                 ← Trước
-              </button>
-
-              <button
-                onClick={() =>
-                  speakJapanese(
-                    currentWord.word
-                  )
-                }
-                className="
-                bg-green-500
-                hover:bg-green-600
-                text-white
-                px-6
-                py-3
-                rounded-2xl
-                font-semibold
-              "
-              >
-                🔊
               </button>
 
               <button
@@ -900,6 +982,58 @@ export default function StudyPage({
 
               </div>
 
+              <div className="flex items-center gap-3 mb-4">
+
+                {/* CHOOSE FILE */}
+                <label
+                  className={`
+      px-5
+      py-3
+      rounded-2xl
+      cursor-pointer
+      font-semibold
+      transition
+
+      ${isDarkMode
+                      ? "bg-slate-700 text-white hover:bg-slate-600"
+                      : "bg-slate-200 text-slate-800 hover:bg-slate-300"
+                    }
+    `}
+                >
+                  📂 Chọn file JSON
+
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleJsonFileUpload}
+                    className="hidden"
+                  />
+
+                </label>
+
+                {/* GUIDE BUTTON */}
+                <button
+                  onClick={() =>
+                    setShowJsonGuide(true)
+                  }
+                  className={`
+      w-12
+      h-12
+      rounded-full
+      text-xl
+      font-bold
+      transition
+
+      ${isDarkMode
+                      ? "bg-blue-600 text-white hover:bg-blue-500"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                    }
+    `}
+                >
+                  ?
+                </button>
+
+              </div>
               <textarea
                 value={jsonInput}
                 onChange={(e) =>
@@ -953,10 +1087,124 @@ export default function StudyPage({
                 </button>
 
               </div>
+              {/* JSON GUIDE MODAL */}
+              {showJsonGuide && (
+
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
+
+                  <div
+                    className={`
+                w-full
+                max-w-4xl
+                rounded-3xl
+                p-8
+                relative
+
+                ${isDarkMode
+                        ? "bg-slate-800 text-white"
+                        : "bg-white text-slate-800"
+                      }
+              `}
+                  >
+
+                    {/* CLOSE */}
+                    <button
+                      onClick={() =>
+                        setShowJsonGuide(false)
+                      }
+                      className="
+                  absolute
+                  top-5
+                  right-6
+                  text-3xl
+                "
+                    >
+                      ✕
+                    </button>
+
+                    <h2 className="text-3xl font-bold mb-6">
+                      Hướng dẫn Prompt AI
+                    </h2>
+
+                    <div
+                      className={`
+                  rounded-2xl
+                  p-6
+                  overflow-auto
+                  text-sm
+                  leading-7
+
+                  ${isDarkMode
+                          ? "bg-slate-900 text-green-300"
+                          : "bg-slate-100 text-slate-800"
+                        }
+                `}
+                    >
+
+                      <pre className="whitespace-pre-wrap">
+                        {`Chuyển đổi danh sách từ vựng tiếng Nhật sau thành JSON với format:
+
+[
+  {
+    "word": "từ vựng",
+    "reading": "cách đọc hiragana",
+    "hanviet": "âm Hán Việt (để rỗng "" nếu từ không có Kanji)",
+    "meaning": "nghĩa tiếng Việt"
+  }
+]
+
+Danh sách từ vựng:
+[DÁN DATA THÔ VÀO ĐÂY]`}
+                      </pre>
+
+                    </div>
+
+                    <button
+                      onClick={() => {
+
+                        navigator.clipboard.writeText(
+                          `Chuyển đổi danh sách từ vựng tiếng Nhật sau thành JSON với format:
+
+[
+  {
+    "word": "từ vựng",
+    "reading": "cách đọc hiragana",
+    "hanviet": "âm Hán Việt (để rỗng "" nếu từ không có Kanji)",
+    "meaning": "nghĩa tiếng Việt"
+  }
+]
+
+Danh sách từ vựng:
+[DÁN DATA THÔ VÀO ĐÂY]`
+                        );
+
+                        alert("Đã copy prompt!");
+
+                      }}
+                      className="
+                  mt-6
+                  bg-blue-500
+                  hover:bg-blue-600
+                  text-white
+                  px-6
+                  py-3
+                  rounded-2xl
+                  font-semibold
+                "
+                    >
+                      📋 Copy Prompt
+                    </button>
+
+                  </div>
+
+                </div>
+
+              )}
 
             </div>
 
           </div>
+
 
         )}
 

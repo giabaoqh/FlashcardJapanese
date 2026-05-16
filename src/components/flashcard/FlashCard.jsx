@@ -3,9 +3,66 @@ export default function FlashCard({
   showMeaning,
   setShowMeaning,
   speakJapanese,
-  isDarkMode
+  isDarkMode,
+  selectedDeck,
+  setSelectedDeck,
+  decks,
+  setDecks,
+  shuffleCards
 }) {
+  const isFavorite =
+    selectedDeck.favorites?.includes(
+      currentWord.word
+    );
 
+  const toggleFavorite = (e) => {
+
+    e.stopPropagation();
+
+    let updatedFavorites = [];
+
+    if (isFavorite) {
+
+      updatedFavorites =
+        selectedDeck.favorites.filter(
+          (item) =>
+            item !== currentWord.word
+        );
+
+    } else {
+
+      updatedFavorites = [
+        ...selectedDeck.favorites,
+        currentWord.word
+      ];
+
+    }
+
+    const updatedDeck = {
+      ...selectedDeck,
+      favorites: updatedFavorites
+    };
+
+    const updatedDecks = decks.map((deck) => {
+
+      if (deck.id === selectedDeck.id) {
+        return updatedDeck;
+      }
+
+      return deck;
+
+    });
+
+    setDecks(updatedDecks);
+
+    setSelectedDeck(updatedDeck);
+
+    localStorage.setItem(
+      "japanese-flashcard-decks",
+      JSON.stringify(updatedDecks)
+    );
+
+  };
   return (
 
     <div
@@ -57,16 +114,48 @@ export default function FlashCard({
         >
 
           {/* FAVORITE */}
-          <div
+          <button
+            onClick={toggleFavorite}
             className="
-              absolute
-              top-5
-              right-5
-              text-3xl
-            "
+    absolute
+    top-5
+    right-5
+    text-4xl
+    transition
+    hover:scale-125
+  "
           >
-            ⭐
-          </div>
+            {isFavorite ? "⭐" : "☆"}
+          </button>
+          <button
+            onClick={(e) => {
+
+              e.stopPropagation();
+
+              shuffleCards();
+
+            }}
+            className={`
+    absolute
+    bottom-5
+    right-20
+    w-12
+    h-12
+    rounded-full
+    flex
+    items-center
+    justify-center
+    text-xl
+    transition
+
+    ${isDarkMode
+                ? "bg-slate-700 text-white hover:bg-slate-600"
+                : "bg-white text-slate-800 hover:bg-slate-200"
+              }
+  `}
+          >
+            🔀
+          </button>
 
           {/* GUIDE */}
           <div
