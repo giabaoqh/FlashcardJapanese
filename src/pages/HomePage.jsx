@@ -144,7 +144,7 @@ export default function HomePage({
                 transition
               "
             >
-              + Tạo Deck
+              + Tạo Flashcard
             </button>
 
           </div>
